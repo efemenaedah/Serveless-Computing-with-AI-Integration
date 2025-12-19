@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Debug - Family Photo Gallery</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .info { border-left: 4px solid #17a2b8; }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .photo-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            color: #333;
+        }
+        .photo-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+        .photo-info {
+            padding: 1.25rem;
+        }
+        .photo-title {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        .photo-meta {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1>🔧 Frontend Debug Tool</h1>
+            <p>Diagnosing why photos aren't displaying in the frontend</p>
+        </div>
+
+        <!-- API Test -->
+        <div class="test-section">
+            <h2>🌐 API Response Test</h2>
+            <p>Test the API and show the raw response</p>
+            <button class="btn" onclick="testAPI()">Test API Response</button>
+            <div id="apiResult" class="result"></div>
+        </div>
+
+        <!-- Frontend Simulation -->
+        <div class="test-section">
+            <h2>🖼️ Frontend Photo Rendering Test</h2>
+            <p>Simulate how the frontend should render photos</p>
+            <button class="btn" onclick="testFrontendRendering()">Test Photo Rendering</button>
+            <div id="renderingResult" class="result"></div>
+            <div id="photoDisplay" class="photo-grid"></div>
+        </div>
+
+        <!-- CORS Test -->
+        <div class="test-section">
+            <h2>🔒 CORS and Network Test</h2>
+            <p>Check if CORS is blocking the frontend requests</p>
+            <button class="btn" onclick="testCORS()">Test CORS</button>
+            <div id="corsResult" class="result"></div>
+        </div>
+
+        <!-- JavaScript Console Errors -->
+        <div class="test-section">
+            <h2>🐛 JavaScript Error Detection</h2>
+            <p>Check for JavaScript errors that might prevent photo loading</p>
+            <button class="btn" onclick="checkJSErrors()">Check for Errors</button>
+            <div id="jsErrorResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://h0vcodxzhj.execute-api.us-east-2.amazonaws.com/photos';
+        let consoleErrors = [];
+        
+        // Capture console errors
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            consoleErrors.push(args.join(' '));
+            originalConsoleError.apply(console, args);
+        };
+
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            
+            element.className = `result ${typeClass}`;
+            element.textContent = `[${timestamp}] ${message}`;
+        }
+
+        async function testAPI() {
+            logResult('apiResult', 'Testing API response...', 'info');
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    let result = `✅ API SUCCESS!\n`;
+                    result += `Status: ${response.status} ${response.statusText}\n`;
+                    result += `Photos Found: ${data.photos ? data.photos.length : 0}\n\n`;
+                    
+                    if (data.photos && data.photos.length > 0) {
+                        result += `First Photo Details:\n`;
+                        const firstPhoto = data.photos[0];
+                        result += `  URL: ${firstPhoto.url}\n`;
+                        result += `  Key: ${firstPhoto.key}\n`;
+                        result += `  Size: ${firstPhoto.size} bytes\n`;
+                        result += `  Last Modified: ${firstPhoto.lastModified}\n`;
+                        
+                        if (firstPhoto.metadata) {
+                            result += `  Title: ${firstPhoto.metadata.title}\n`;
+                            result += `  Description: ${firstPhoto.metadata.description}\n`;
+                        }
+                        
+                        result += `\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                    } else {
+                        result += `No photos in response - check S3 upload`;
+                    }
+                    
+                    logResult('apiResult', result, 'success');
+                } else {
+                    logResult('apiResult', `❌ API Error: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                logResult('apiResult', `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFrontendRendering() {
+            logResult('renderingResult', 'Testing frontend photo rendering...', 'info');
+            
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                if (data.photos && data.photos.length > 0) {
+                    // Clear previous photos
+                    const photoDisplay = document.getElementById('photoDisplay');
+                    photoDisplay.innerHTML = '';
+                    
+                    let result = `🎉 RENDERING SUCCESS!\n`;
+                    result += `Photos to render: ${data.photos.length}\n\n`;
+                    
+                    // Render each photo
+                    data.photos.forEach((photo, index) => {
+                        const photoCard = document.createElement('div');
+                        photoCard.className = 'photo-card';
+                        
+                        const title = photo.metadata?.title || photo.key.split('/').pop() || `Photo ${index + 1}`;
+                        const description = photo.metadata?.description || 'Family photo';
+                        const sizeKB = Math.round(photo.size / 1024);
+                        const lastModified = new Date(photo.lastModified).toLocaleDateString();
+                        
+                        photoCard.innerHTML = `
+                            <img src="${photo.url}" alt="${title}" onerror="this.style.border='2px solid red'; this.alt='Failed to load';">
+                            <div class="photo-info">
+                                <div class="photo-title">${title}</div>
+                                <div class="photo-meta">
+                                    <div>Size: ${sizeKB} KB</div>
+                                    <div>Modified: ${lastModified}</div>
+                                    <div>Key: ${photo.key}</div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        photoDisplay.appendChild(photoCard);
+                        
+                        result += `Photo ${index + 1}: ${title}\n`;
+                        result += `  URL: ${photo.url}\n`;
+                        result += `  Size: ${sizeKB} KB\n\n`;
+                    });
+                    
+                    result += `✅ Photos rendered successfully!\n`;
+                    result += `Check below to see if images load properly.`;
+                    
+                    logResult('renderingResult', result, 'success');
+                } else {
+                    logResult('renderingResult', '⚠️ No photos to render - API returned empty array', 'error');
+                }
+            } catch (error) {
+                logResult('renderingResult', `❌ Rendering failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCORS() {
+            logResult('corsResult', 'Testing CORS configuration...', 'info');
+            
+            try {
+                // Test with different request configurations
+                const tests = [
+                    { name: 'Simple GET', config: { method: 'GET' } },
+                    { name: 'GET with headers', config: { 
+                        method: 'GET', 
+                        headers: { 'Accept': 'application/json' }
+                    }},
+                    { name: 'GET with CORS mode', config: { 
+                        method: 'GET', 
+                        mode: 'cors',
+                        headers: { 'Accept': 'application/json' }
+                    }}
+                ];
+                
+                let result = `🔒 CORS TEST RESULTS:\n\n`;
+                
+                for (const test of tests) {
+                    try {
+                        const response = await fetch(API_URL, test.config);
+                        const corsHeaders = {
+                            'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                            'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods')
+                        };
+                        
+                        result += `✅ ${test.name}: SUCCESS (${response.status})\n`;
+                        result += `   CORS Origin: ${corsHeaders['Access-Control-Allow-Origin']}\n`;
+                        result += `   CORS Methods: ${corsHeaders['Access-Control-Allow-Methods']}\n\n`;
+                    } catch (error) {
+                        result += `❌ ${test.name}: FAILED - ${error.message}\n\n`;
+                    }
+                }
+                
+                result += `Current Origin: ${window.location.origin}\n`;
+                result += `Request URL: ${API_URL}`;
+                
+                logResult('corsResult', result, 'success');
+            } catch (error) {
+                logResult('corsResult', `❌ CORS test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function checkJSErrors() {
+            let result = `🐛 JAVASCRIPT ERROR CHECK:\n\n`;
+            
+            if (consoleErrors.length > 0) {
+                result += `❌ Errors detected:\n`;
+                consoleErrors.forEach((error, index) => {
+                    result += `${index + 1}. ${error}\n`;
+                });
+            } else {
+                result += `✅ No JavaScript errors detected\n`;
+            }
+            
+            result += `\nBrowser Info:\n`;
+            result += `User Agent: ${navigator.userAgent}\n`;
+            result += `Fetch API: ${typeof fetch !== 'undefined' ? 'Supported' : 'Not supported'}\n`;
+            result += `Promises: ${typeof Promise !== 'undefined' ? 'Supported' : 'Not supported'}\n`;
+            result += `Arrow Functions: ${(() => true)() ? 'Supported' : 'Not supported'}\n`;
+            
+            logResult('jsErrorResult', result, consoleErrors.length > 0 ? 'error' : 'success');
+        }
+
+        // Auto-run tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testAPI();
+            }, 1000);
+        });
+
+        // Test error handling
+        window.addEventListener('error', (event) => {
+            consoleErrors.push(`Error: ${event.message} at ${event.filename}:${event.lineno}`);
+        });
+    </script>
+</body>
+</html>

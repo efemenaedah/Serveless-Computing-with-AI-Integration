@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Handling Test</title>
+</head>
+<body>
+    <h1>Error Handling Test</h1>
+    <p>Open the browser console and click the buttons below to test different error scenarios:</p>
+    
+    <button onclick="testNetworkError()">Test Network Error</button>
+    <button onclick="testTimeoutError()">Test Timeout Error</button>
+    <button onclick="testCORSError()">Test CORS Error</button>
+    <button onclick="testAPIError()">Test API Error</button>
+    <button onclick="testImageError()">Test Image Error</button>
+    
+    <div id="testResults" style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <h3>Test Results:</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function logResult(test, result) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += `<div><strong>${test}:</strong> ${result}</div>`;
+        }
+
+        function testNetworkError() {
+            console.log('Testing network error handling...');
+            
+            // Simulate a network error
+            fetch('https://nonexistent-domain-12345.com/api/test')
+                .then(response => {
+                    logResult('Network Error Test', 'Unexpected success');
+                })
+                .catch(error => {
+                    console.log('Network error caught:', error);
+                    logResult('Network Error Test', `✓ Caught: ${error.message}`);
+                });
+        }
+
+        function testTimeoutError() {
+            console.log('Testing timeout error handling...');
+            
+            // Simulate a timeout error
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 100); // Very short timeout
+            
+            fetch('https://httpbin.org/delay/5', { signal: controller.signal })
+                .then(response => {
+                    logResult('Timeout Error Test', 'Unexpected success');
+                })
+                .catch(error => {
+                    console.log('Timeout error caught:', error);
+                    logResult('Timeout Error Test', `✓ Caught: ${error.message}`);
+                });
+        }
+
+        function testCORSError() {
+            console.log('Testing CORS error handling...');
+            
+            // This should trigger a CORS error
+            fetch('https://api.github.com/user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => {
+                    logResult('CORS Error Test', 'Unexpected success');
+                })
+                .catch(error => {
+                    console.log('CORS error caught:', error);
+                    logResult('CORS Error Test', `✓ Caught: ${error.message}`);
+                });
+        }
+
+        function testAPIError() {
+            console.log('Testing API error handling...');
+            
+            // This should return a 404 error
+            fetch('https://httpbin.org/status/404')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                    }
+                    logResult('API Error Test', 'Unexpected success');
+                })
+                .catch(error => {
+                    console.log('API error caught:', error);
+                    logResult('API Error Test', `✓ Caught: ${error.message}`);
+                });
+        }
+
+        function testImageError() {
+            console.log('Testing image error handling...');
+            
+            const img = new Image();
+            img.onload = () => {
+                logResult('Image Error Test', 'Unexpected success');
+            };
+            img.onerror = (error) => {
+                console.log('Image error caught:', error);
+                logResult('Image Error Test', '✓ Image loading error handled');
+            };
+            img.src = 'https://nonexistent-domain-12345.com/nonexistent-image.jpg';
+        }
+
+        // Test error monitoring
+        console.log('Error handling test page loaded successfully');
+        logResult('Page Load', '✓ Test page loaded successfully');
+    </script>
+</body>
+</html>

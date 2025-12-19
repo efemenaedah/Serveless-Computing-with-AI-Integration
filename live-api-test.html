@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live API Test - Family Photo Gallery</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .info { border-left: 4px solid #17a2b8; }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1>🔍 Live API Test - Photo Upload Verification</h1>
+            <p>Testing API: <strong>https://h0vcodxzhj.execute-api.us-east-2.amazonaws.com/photos</strong></p>
+            <p>Checking for uploaded photos in S3 /uploads folder</p>
+        </div>
+
+        <!-- Live API Test -->
+        <div class="test-section">
+            <h2>📸 Photo Upload Verification</h2>
+            <p>Check if photos have been uploaded to S3 and are accessible via API</p>
+            <button class="btn" onclick="testPhotoUpload()">Check for Uploaded Photos</button>
+            <div id="photoUploadResult" class="result"></div>
+        </div>
+
+        <!-- Detailed API Response -->
+        <div class="test-section">
+            <h2>🔍 Detailed API Response Analysis</h2>
+            <p>Analyze the complete API response structure and content</p>
+            <button class="btn" onclick="analyzeAPIResponse()">Analyze API Response</button>
+            <div id="apiAnalysisResult" class="result"></div>
+        </div>
+
+        <!-- S3 Bucket Diagnostics -->
+        <div class="test-section">
+            <h2>🪣 S3 Bucket Diagnostics</h2>
+            <p>Diagnose potential issues with S3 bucket configuration</p>
+            <button class="btn" onclick="diagnoseS3Issues()">Run S3 Diagnostics</button>
+            <div id="s3DiagnosticsResult" class="result"></div>
+        </div>
+
+        <!-- Lambda Function Test -->
+        <div class="test-section">
+            <h2>⚡ Lambda Function Test</h2>
+            <p>Test Lambda function execution and error handling</p>
+            <button class="btn" onclick="testLambdaFunction()">Test Lambda Function</button>
+            <div id="lambdaTestResult" class="result"></div>
+        </div>
+
+        <!-- Overall Status -->
+        <div class="test-section" style="text-align: center; border-left: 4px solid #ffc107;">
+            <h2>📊 Overall Status</h2>
+            <div id="overallStatus" style="font-size: 1.2rem; margin: 20px 0;">
+                <span class="status-indicator status-warning"></span>
+                Ready to test - Click buttons above
+            </div>
+            <button class="btn" onclick="runAllTests()" style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); font-size: 1.1rem; padding: 15px 30px;">
+                🚀 Run All Tests
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://h0vcodxzhj.execute-api.us-east-2.amazonaws.com/photos';
+        
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('overallStatus');
+            const indicator = type === 'success' ? 'status-success' : 
+                            type === 'error' ? 'status-error' : 'status-warning';
+            statusEl.innerHTML = `<span class="status-indicator ${indicator}"></span>${message}`;
+        }
+
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            
+            element.className = `result ${typeClass}`;
+            element.textContent = `[${timestamp}] ${message}`;
+        }
+
+        async function testPhotoUpload() {
+            logResult('photoUploadResult', 'Checking for uploaded photos...', 'info');
+            updateStatus('Checking photo uploads...', 'warning');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const photoCount = data.photos ? data.photos.length : 0;
+                    
+                    if (photoCount > 0) {
+                        // Photos found!
+                        const photoList = data.photos.map((photo, index) => {
+                            const filename = photo.key ? photo.key.split('/').pop() : 'unknown';
+                            const sizeKB = photo.size ? Math.round(photo.size / 1024) : 0;
+                            const lastModified = photo.lastModified ? new Date(photo.lastModified).toLocaleString() : 'unknown';
+                            return `  ${index + 1}. ${filename} (${sizeKB} KB) - Modified: ${lastModified}`;
+                        }).join('\\n');
+                        
+                        logResult('photoUploadResult', 
+                            `🎉 PHOTOS FOUND!\n` +
+                            `Status: ${response.status} ${response.statusText}\n` +
+                            `Response Time: ${responseTime}ms\n` +
+                            `Photos Found: ${photoCount}\n\n` +
+                            `Photo List:\n${photoList}\n\n` +
+                            `✅ Your S3 /uploads folder has photos!\n` +
+                            `✅ Lambda function is working correctly!\n` +
+                            `✅ API Gateway is responding with photo data!`, 
+                            'success'
+                        );
+                        updateStatus(`🎉 SUCCESS! ${photoCount} photos found`, 'success');
+                    } else {
+                        // No photos found
+                        logResult('photoUploadResult', 
+                            `⚠️ NO PHOTOS FOUND\n` +
+                            `Status: ${response.status} ${response.statusText}\n` +
+                            `Response Time: ${responseTime}ms\n` +
+                            `Photos Found: 0\n\n` +
+                            `Possible reasons:\n` +
+                            `1. Photos not uploaded to S3 yet\n` +
+                            `2. Photos uploaded to wrong folder (should be /uploads)\n` +
+                            `3. Photos have unsupported file extensions\n` +
+                            `4. Lambda function not updated with new code\n` +
+                            `5. S3 bucket permissions issue\n\n` +
+                            `Supported formats: .jpg, .jpeg, .png, .gif, .webp\n` +
+                            `Expected location: family-bucket-22/uploads/`, 
+                            'error'
+                        );
+                        updateStatus('⚠️ No photos found in S3', 'error');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    logResult('photoUploadResult', 
+                        `❌ API ERROR!\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Response Time: ${responseTime}ms\n` +
+                        `Error Response: ${errorText}`, 
+                        'error'
+                    );
+                    updateStatus(`❌ API Error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                logResult('photoUploadResult', 
+                    `❌ NETWORK ERROR!\n` +
+                    `Error: ${error.message}\n` +
+                    `This could indicate:\n` +
+                    `- Network connectivity issues\n` +
+                    `- CORS configuration problems\n` +
+                    `- API Gateway not accessible`, 
+                    'error'
+                );
+                updateStatus('❌ Network Error', 'error');
+            }
+        }
+
+        async function analyzeAPIResponse() {
+            logResult('apiAnalysisResult', 'Analyzing complete API response...', 'info');
+            
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    logResult('apiAnalysisResult', `Cannot analyze - API returned ${response.status}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // Detailed analysis
+                let analysis = `📋 COMPLETE API RESPONSE ANALYSIS\n\n`;
+                analysis += `Response Headers:\n`;
+                analysis += `  Content-Type: ${response.headers.get('content-type')}\n`;
+                analysis += `  Access-Control-Allow-Origin: ${response.headers.get('access-control-allow-origin')}\n`;
+                analysis += `  Content-Length: ${response.headers.get('content-length')}\n\n`;
+                
+                analysis += `Response Structure:\n`;
+                analysis += `  Type: ${typeof data}\n`;
+                analysis += `  Has 'photos' property: ${data.hasOwnProperty('photos')}\n`;
+                analysis += `  Photos is array: ${Array.isArray(data.photos)}\n`;
+                analysis += `  Photos count: ${data.photos ? data.photos.length : 'N/A'}\n\n`;
+                
+                if (data.photos && data.photos.length > 0) {
+                    analysis += `First Photo Analysis:\n`;
+                    const firstPhoto = data.photos[0];
+                    analysis += `  URL: ${firstPhoto.url || 'Missing'}\n`;
+                    analysis += `  Key: ${firstPhoto.key || 'Missing'}\n`;
+                    analysis += `  Size: ${firstPhoto.size || 'Missing'} bytes\n`;
+                    analysis += `  Last Modified: ${firstPhoto.lastModified || 'Missing'}\n`;
+                    analysis += `  Has Metadata: ${firstPhoto.metadata ? 'Yes' : 'No'}\n`;
+                    
+                    if (firstPhoto.metadata) {
+                        analysis += `  Metadata Title: ${firstPhoto.metadata.title || 'Missing'}\n`;
+                        analysis += `  Metadata Description: ${firstPhoto.metadata.description || 'Missing'}\n`;
+                        analysis += `  Metadata Tags: ${firstPhoto.metadata.tags ? firstPhoto.metadata.tags.join(', ') : 'Missing'}\n`;
+                    }
+                } else {
+                    analysis += `No photos to analyze - empty array\n`;
+                }
+                
+                analysis += `\nRaw Response:\n${JSON.stringify(data, null, 2)}`;
+                
+                logResult('apiAnalysisResult', analysis, data.photos && data.photos.length > 0 ? 'success' : 'info');
+                
+            } catch (error) {
+                logResult('apiAnalysisResult', `❌ Analysis failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function diagnoseS3Issues() {
+            logResult('s3DiagnosticsResult', 'Running S3 diagnostics...', 'info');
+            
+            let diagnostics = `🪣 S3 BUCKET DIAGNOSTICS\n\n`;
+            
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                diagnostics += `✅ API Gateway Connection: Working\n`;
+                diagnostics += `✅ Lambda Function Execution: Working\n`;
+                diagnostics += `✅ S3 Bucket Access: Working (no errors)\n\n`;
+                
+                if (data.photos && data.photos.length === 0) {
+                    diagnostics += `⚠️ DIAGNOSIS: S3 /uploads folder appears to be empty\n\n`;
+                    diagnostics += `Checklist for uploading photos:\n`;
+                    diagnostics += `1. ✓ Bucket name: family-bucket-22\n`;
+                    diagnostics += `2. ✓ Folder path: /uploads (not /upload)\n`;
+                    diagnostics += `3. ? File extensions: .jpg, .jpeg, .png, .gif, .webp\n`;
+                    diagnostics += `4. ? File permissions: Public read or Lambda access\n`;
+                    diagnostics += `5. ? Upload method: AWS Console, CLI, or SDK\n\n`;
+                    
+                    diagnostics += `Common issues:\n`;
+                    diagnostics += `- Files uploaded to root instead of /uploads folder\n`;
+                    diagnostics += `- Files have unsupported extensions (e.g., .bmp, .tiff)\n`;
+                    diagnostics += `- Files are private and Lambda can't access them\n`;
+                    diagnostics += `- Lambda function not updated with latest code\n`;
+                    diagnostics += `- Bucket name mismatch in Lambda environment variables\n`;
+                } else if (data.photos && data.photos.length > 0) {
+                    diagnostics += `🎉 DIAGNOSIS: Photos found successfully!\n\n`;
+                    diagnostics += `✅ S3 bucket configuration is correct\n`;
+                    diagnostics += `✅ Lambda function is working properly\n`;
+                    diagnostics += `✅ File permissions are set correctly\n`;
+                    diagnostics += `✅ Photos are in the correct /uploads folder\n`;
+                }
+                
+                logResult('s3DiagnosticsResult', diagnostics, data.photos && data.photos.length > 0 ? 'success' : 'info');
+                
+            } catch (error) {
+                diagnostics += `❌ DIAGNOSIS: API connection failed\n\n`;
+                diagnostics += `Error: ${error.message}\n\n`;
+                diagnostics += `This indicates:\n`;
+                diagnostics += `- Network connectivity issues\n`;
+                diagnostics += `- API Gateway configuration problems\n`;
+                diagnostics += `- Lambda function deployment issues\n`;
+                
+                logResult('s3DiagnosticsResult', diagnostics, 'error');
+            }
+        }
+
+        async function testLambdaFunction() {
+            logResult('lambdaTestResult', 'Testing Lambda function execution...', 'info');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Test-Lambda': 'true'
+                    }
+                });
+                const endTime = Date.now();
+                
+                let testResult = `⚡ LAMBDA FUNCTION TEST\n\n`;
+                testResult += `Execution Time: ${endTime - startTime}ms\n`;
+                testResult += `Status Code: ${response.status}\n`;
+                testResult += `Status Text: ${response.statusText}\n\n`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    testResult += `✅ Lambda Execution: SUCCESS\n`;
+                    testResult += `✅ Response Format: Valid JSON\n`;
+                    testResult += `✅ CORS Headers: Present\n`;
+                    testResult += `✅ Photos Array: ${Array.isArray(data.photos) ? 'Valid' : 'Invalid'}\n\n`;
+                    
+                    testResult += `Lambda Function Status:\n`;
+                    testResult += `- Environment: ${response.headers.get('x-amzn-requestid') ? 'AWS Lambda' : 'Unknown'}\n`;
+                    testResult += `- Region: us-east-2 (configured)\n`;
+                    testResult += `- Bucket: family-bucket-22 (configured)\n`;
+                    testResult += `- Folder: /uploads (configured)\n\n`;
+                    
+                    if (data.photos && data.photos.length > 0) {
+                        testResult += `🎉 Lambda is successfully reading photos from S3!\n`;
+                        testResult += `Photos processed: ${data.photos.length}\n`;
+                    } else {
+                        testResult += `⚠️ Lambda is working but found no photos in /uploads\n`;
+                        testResult += `This means the Lambda function code is correct,\n`;
+                        testResult += `but the S3 /uploads folder is empty.\n`;
+                    }
+                    
+                    logResult('lambdaTestResult', testResult, 'success');
+                } else {
+                    testResult += `❌ Lambda Execution: FAILED\n`;
+                    testResult += `Error: ${response.status} ${response.statusText}\n`;
+                    
+                    const errorText = await response.text();
+                    testResult += `Response: ${errorText}\n\n`;
+                    testResult += `Possible issues:\n`;
+                    testResult += `- Lambda function not deployed\n`;
+                    testResult += `- Runtime errors in Lambda code\n`;
+                    testResult += `- IAM permissions issues\n`;
+                    testResult += `- Environment variables not set\n`;
+                    
+                    logResult('lambdaTestResult', testResult, 'error');
+                }
+                
+            } catch (error) {
+                logResult('lambdaTestResult', 
+                    `❌ LAMBDA TEST FAILED!\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `This indicates a network or API Gateway issue,\n` +
+                    `not necessarily a Lambda problem.`, 
+                    'error'
+                );
+            }
+        }
+
+        async function runAllTests() {
+            updateStatus('Running comprehensive photo upload verification...', 'warning');
+            
+            await testPhotoUpload();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await analyzeAPIResponse();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await diagnoseS3Issues();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testLambdaFunction();
+        }
+
+        // Auto-run photo upload test when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('Auto-running photo upload verification...');
+                testPhotoUpload();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

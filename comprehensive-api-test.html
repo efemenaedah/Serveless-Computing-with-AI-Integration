@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive API Test - Family Photo Gallery</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .info { border-left: 4px solid #17a2b8; }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1>🧪 Comprehensive API Test Suite</h1>
+            <p>Testing AWS API Gateway: <strong>https://h0vcodxzhj.execute-api.us-east-2.amazonaws.com</strong></p>
+            <p>Running from: <strong id="currentUrl"></strong></p>
+        </div>
+
+        <!-- Test Status Overview -->
+        <div class="test-section">
+            <h2>📊 Test Status Overview</h2>
+            <div id="overallStatus" style="font-size: 1.2rem; margin: 20px 0;">
+                <span class="status-indicator status-warning"></span>
+                Ready to test - Click "Run All Tests" below
+            </div>
+            <button class="btn" onclick="runAllTests()" style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); font-size: 1.1rem; padding: 15px 30px;">
+                🚀 Run All Tests
+            </button>
+        </div>
+
+        <!-- API Connectivity Test -->
+        <div class="test-section">
+            <h2>🌐 API Connectivity Test</h2>
+            <p>Test basic connectivity to the API Gateway endpoint</p>
+            <button class="btn" onclick="testConnectivity()">Test Connectivity</button>
+            <div id="connectivityResult" class="result"></div>
+        </div>
+
+        <!-- CORS Configuration Test -->
+        <div class="test-section">
+            <h2>🔒 CORS Configuration Test</h2>
+            <p>Verify CORS headers are properly configured</p>
+            <button class="btn" onclick="testCORS()">Test CORS</button>
+            <div id="corsResult" class="result"></div>
+        </div>
+
+        <!-- Response Format Test -->
+        <div class="test-section">
+            <h2>📋 Response Format Test</h2>
+            <p>Validate API response structure matches frontend expectations</p>
+            <button class="btn" onclick="testResponseFormat()">Test Response Format</button>
+            <div id="formatResult" class="result"></div>
+        </div>
+
+        <!-- Photo Data Test -->
+        <div class="test-section">
+            <h2>📸 Photo Data Test</h2>
+            <p>Check if photos are found in S3 /uploads folder</p>
+            <button class="btn" onclick="testPhotoData()">Test Photo Data</button>
+            <div id="photoDataResult" class="result"></div>
+        </div>
+
+        <!-- Performance Test -->
+        <div class="test-section">
+            <h2>⚡ Performance Test</h2>
+            <p>Measure API response times and reliability</p>
+            <button class="btn" onclick="testPerformance()">Test Performance</button>
+            <div id="performanceResult" class="result"></div>
+        </div>
+
+        <!-- Integration Test -->
+        <div class="test-section">
+            <h2>🔗 Full Integration Test</h2>
+            <p>Simulate complete Family Photo Gallery workflow</p>
+            <button class="btn" onclick="testIntegration()">Test Integration</button>
+            <div id="integrationResult" class="result"></div>
+        </div>
+
+        <!-- Test Summary -->
+        <div class="test-section" style="border-left: 4px solid #ffc107;">
+            <h2>📈 Test Summary</h2>
+            <div id="testSummary" class="result info">
+                No tests run yet. Click "Run All Tests" to begin comprehensive testing.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://h0vcodxzhj.execute-api.us-east-2.amazonaws.com/photos';
+        let testResults = {
+            connectivity: null,
+            cors: null,
+            format: null,
+            photoData: null,
+            performance: null,
+            integration: null
+        };
+
+        // Display current URL
+        document.getElementById('currentUrl').textContent = window.location.href;
+
+        function updateOverallStatus(message, type = 'info') {
+            const statusEl = document.getElementById('overallStatus');
+            const indicator = type === 'success' ? 'status-success' : 
+                            type === 'error' ? 'status-error' : 'status-warning';
+            statusEl.innerHTML = `<span class="status-indicator ${indicator}"></span>${message}`;
+        }
+
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            
+            element.className = `result ${typeClass}`;
+            element.textContent = `[${timestamp}] ${message}`;
+        }
+
+        async function testConnectivity() {
+            logResult('connectivityResult', 'Testing API connectivity...', 'info');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    testResults.connectivity = true;
+                    logResult('connectivityResult', 
+                        `✅ CONNECTIVITY SUCCESS!\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Response Time: ${responseTime}ms\n` +
+                        `Content-Type: ${response.headers.get('content-type')}\n` +
+                        `Server: ${response.headers.get('server') || 'AWS API Gateway'}\n\n` +
+                        `✅ API Gateway is responding correctly`, 
+                        'success'
+                    );
+                } else {
+                    testResults.connectivity = false;
+                    const errorText = await response.text();
+                    logResult('connectivityResult', 
+                        `❌ CONNECTIVITY FAILED!\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Response Time: ${responseTime}ms\n` +
+                        `Error: ${errorText}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                testResults.connectivity = false;
+                logResult('connectivityResult', 
+                    `❌ NETWORK ERROR!\n` +
+                    `Error: ${error.message}\n` +
+                    `This indicates:\n` +
+                    `- Network connectivity issues\n` +
+                    `- CORS configuration problems\n` +
+                    `- API Gateway not accessible`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testCORS() {
+            logResult('corsResult', 'Testing CORS configuration...', 'info');
+            
+            try {
+                // Test actual request (not OPTIONS preflight)
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                const corsWorking = corsHeaders['Access-Control-Allow-Origin'] === '*' || 
+                                  corsHeaders['Access-Control-Allow-Origin'] === window.location.origin;
+                
+                if (corsWorking && response.ok) {
+                    testResults.cors = true;
+                    logResult('corsResult', 
+                        `✅ CORS SUCCESS!\n` +
+                        `Status: ${response.status}\n` +
+                        `Origin: ${window.location.origin}\n` +
+                        `CORS Headers:\n${JSON.stringify(corsHeaders, null, 2)}\n\n` +
+                        `✅ CORS is properly configured for browser requests`, 
+                        'success'
+                    );
+                } else {
+                    testResults.cors = false;
+                    logResult('corsResult', 
+                        `❌ CORS ISSUES DETECTED!\n` +
+                        `Status: ${response.status}\n` +
+                        `CORS Headers:\n${JSON.stringify(corsHeaders, null, 2)}\n\n` +
+                        `❌ CORS needs proper configuration in API Gateway`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                testResults.cors = false;
+                logResult('corsResult', 
+                    `❌ CORS TEST FAILED!\n` +
+                    `Error: ${error.message}\n` +
+                    `This usually means CORS is not enabled in API Gateway.`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testResponseFormat() {
+            logResult('formatResult', 'Testing response format...', 'info');
+            
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    testResults.format = false;
+                    logResult('formatResult', `❌ Cannot test format - API returned ${response.status}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                const validationResults = [];
+                
+                // Check required structure
+                if (data.hasOwnProperty('photos') && Array.isArray(data.photos)) {
+                    validationResults.push('✅ Response has "photos" array (CORRECT FORMAT)');
+                    
+                    if (data.photos.length > 0) {
+                        const photo = data.photos[0];
+                        
+                        // Check required fields for each photo
+                        const requiredFields = ['url', 'key', 'lastModified', 'size'];
+                        let allFieldsPresent = true;
+                        
+                        requiredFields.forEach(field => {
+                            if (photo.hasOwnProperty(field)) {
+                                validationResults.push(`✅ Photo has "${field}" field`);
+                            } else {
+                                validationResults.push(`❌ Photo missing "${field}" field`);
+                                allFieldsPresent = false;
+                            }
+                        });
+                        
+                        // Check field types
+                        if (typeof photo.url === 'string') validationResults.push('✅ URL is string');
+                        if (typeof photo.key === 'string') validationResults.push('✅ Key is string');
+                        if (typeof photo.size === 'number') validationResults.push('✅ Size is number');
+                        if (typeof photo.lastModified === 'string') validationResults.push('✅ LastModified is string');
+                        
+                        // Check metadata
+                        if (photo.metadata && typeof photo.metadata === 'object') {
+                            validationResults.push('✅ Metadata object present');
+                        } else {
+                            validationResults.push('⚠️ No metadata object (optional but recommended)');
+                        }
+                        
+                        testResults.format = allFieldsPresent;
+                    } else {
+                        validationResults.push('⚠️ Photos array is empty - no photos to validate structure');
+                        testResults.format = true; // Empty array is valid format
+                    }
+                } else {
+                    validationResults.push('❌ Response missing "photos" array - WRONG FORMAT!');
+                    validationResults.push('Expected: {"photos": [...]}');
+                    validationResults.push(`Got: ${JSON.stringify(data)}`);
+                    testResults.format = false;
+                }
+                
+                const hasErrors = validationResults.some(r => r.includes('❌'));
+                logResult('formatResult', 
+                    `Response Format Validation:\n${validationResults.join('\n')}\n\n` +
+                    `${hasErrors ? '❌ FORMAT ISSUES FOUND' : '✅ FORMAT IS CORRECT'}`, 
+                    hasErrors ? 'error' : 'success'
+                );
+                
+            } catch (error) {
+                testResults.format = false;
+                logResult('formatResult', `❌ Format validation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPhotoData() {
+            logResult('photoDataResult', 'Testing photo data from S3 /uploads folder...', 'info');
+            
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    testResults.photoData = false;
+                    logResult('photoDataResult', `❌ Cannot test photo data - API returned ${response.status}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (data.photos && Array.isArray(data.photos)) {
+                    const photoCount = data.photos.length;
+                    
+                    if (photoCount > 0) {
+                        testResults.photoData = true;
+                        
+                        // Analyze photo data
+                        const photoAnalysis = data.photos.map((photo, index) => {
+                            const filename = photo.key ? photo.key.split('/').pop() : 'unknown';
+                            const sizeKB = photo.size ? Math.round(photo.size / 1024) : 0;
+                            return `  ${index + 1}. ${filename} (${sizeKB} KB)`;
+                        }).join('\n');
+                        
+                        // Check if photos are from /uploads folder
+                        const uploadsPhotos = data.photos.filter(photo => photo.key && photo.key.startsWith('uploads/'));
+                        const uploadsCount = uploadsPhotos.length;
+                        
+                        logResult('photoDataResult', 
+                            `✅ PHOTO DATA SUCCESS!\n` +
+                            `Total Photos Found: ${photoCount}\n` +
+                            `Photos from /uploads folder: ${uploadsCount}\n` +
+                            `Supported formats: JPG, PNG, GIF, WEBP\n\n` +
+                            `Photo List:\n${photoAnalysis}\n\n` +
+                            `${uploadsCount === photoCount ? '✅ All photos are from /uploads folder' : '⚠️ Some photos may not be from /uploads folder'}`, 
+                            'success'
+                        );
+                    } else {
+                        testResults.photoData = false;
+                        logResult('photoDataResult', 
+                            `⚠️ NO PHOTOS FOUND!\n` +
+                            `The S3 bucket /uploads folder appears to be empty.\n\n` +
+                            `To fix this:\n` +
+                            `1. Upload photos to S3 bucket: family-bucket-22\n` +
+                            `2. Place them in the /uploads folder\n` +
+                            `3. Ensure file extensions are: .jpg, .jpeg, .png, .gif, .webp\n` +
+                            `4. Verify bucket permissions allow Lambda access`, 
+                            'error'
+                        );
+                    }
+                } else {
+                    testResults.photoData = false;
+                    logResult('photoDataResult', 
+                        `❌ INVALID RESPONSE FORMAT!\n` +
+                        `Expected "photos" array but got: ${JSON.stringify(data)}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                testResults.photoData = false;
+                logResult('photoDataResult', `❌ Photo data test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPerformance() {
+            logResult('performanceResult', 'Running performance test (3 requests)...', 'info');
+            
+            const iterations = 3;
+            const times = [];
+            const results = [];
+            
+            for (let i = 0; i < iterations; i++) {
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(API_URL);
+                    const endTime = Date.now();
+                    
+                    if (response.ok) {
+                        await response.json();
+                        const responseTime = endTime - startTime;
+                        times.push(responseTime);
+                        results.push(`Request ${i + 1}: ${responseTime}ms ✅`);
+                    } else {
+                        results.push(`Request ${i + 1}: Failed (${response.status}) ❌`);
+                    }
+                } catch (error) {
+                    results.push(`Request ${i + 1}: Error (${error.message}) ❌`);
+                }
+                
+                // Small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            if (times.length > 0) {
+                const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+                const minTime = Math.min(...times);
+                const maxTime = Math.max(...times);
+                
+                const performance = avgTime < 1000 ? 'Excellent' : 
+                                  avgTime < 2000 ? 'Good' : 
+                                  avgTime < 5000 ? 'Acceptable' : 'Slow';
+                
+                testResults.performance = avgTime < 5000; // Consider good if under 5 seconds
+                
+                logResult('performanceResult', 
+                    `Performance Test Results:\n${results.join('\n')}\n\n` +
+                    `Average Response Time: ${avgTime.toFixed(2)}ms\n` +
+                    `Minimum Time: ${minTime}ms\n` +
+                    `Maximum Time: ${maxTime}ms\n` +
+                    `Successful Requests: ${times.length}/${iterations}\n` +
+                    `Performance Rating: ${performance}\n\n` +
+                    `${testResults.performance ? '✅ Performance is acceptable' : '⚠️ Performance may be slow'}`, 
+                    testResults.performance ? 'success' : 'info'
+                );
+            } else {
+                testResults.performance = false;
+                logResult('performanceResult', 
+                    `❌ PERFORMANCE TEST FAILED!\n${results.join('\n')}\n\nAll requests failed.`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testIntegration() {
+            logResult('integrationResult', 'Running full integration test...', 'info');
+            
+            try {
+                // Simulate exact Family Photo Gallery request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    mode: 'cors',
+                    credentials: 'omit',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Validate exactly like the frontend does
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response format: expected object');
+                }
+                
+                if (!Array.isArray(data.photos)) {
+                    throw new Error('Invalid response format: photos must be an array');
+                }
+                
+                // Validate each photo
+                data.photos.forEach((photo, index) => {
+                    if (!photo || typeof photo !== 'object') {
+                        throw new Error(`Invalid photo at index ${index}: expected object`);
+                    }
+                    
+                    if (!photo.url || typeof photo.url !== 'string') {
+                        throw new Error(`Invalid photo at index ${index}: url is required`);
+                    }
+                    
+                    if (!photo.key || typeof photo.key !== 'string') {
+                        throw new Error(`Invalid photo at index ${index}: key is required`);
+                    }
+                    
+                    if (!photo.lastModified || typeof photo.lastModified !== 'string') {
+                        throw new Error(`Invalid photo at index ${index}: lastModified is required`);
+                    }
+                    
+                    if (typeof photo.size !== 'number' || photo.size < 0) {
+                        throw new Error(`Invalid photo at index ${index}: size must be a non-negative number`);
+                    }
+                });
+                
+                testResults.integration = true;
+                
+                logResult('integrationResult', 
+                    `🎉 INTEGRATION TEST PASSED!\n\n` +
+                    `✅ API Gateway responding correctly\n` +
+                    `✅ CORS configured properly\n` +
+                    `✅ Response format is valid\n` +
+                    `✅ Found ${data.photos.length} photos\n` +
+                    `✅ All photo objects have required fields\n\n` +
+                    `🚀 Your Family Photo Gallery will work perfectly!\n\n` +
+                    `${data.photos.length > 0 ? 
+                        `Sample photo:\n${JSON.stringify(data.photos[0], null, 2)}` : 
+                        'No photos found - check your S3 /uploads folder'}`, 
+                    'success'
+                );
+                
+            } catch (error) {
+                testResults.integration = false;
+                logResult('integrationResult', 
+                    `❌ INTEGRATION TEST FAILED!\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `Your Family Photo Gallery will have issues.\n` +
+                    `Please fix the above error before deployment.`, 
+                    'error'
+                );
+            }
+        }
+
+        function generateTestSummary() {
+            const tests = [
+                { name: 'Connectivity', result: testResults.connectivity },
+                { name: 'CORS', result: testResults.cors },
+                { name: 'Response Format', result: testResults.format },
+                { name: 'Photo Data', result: testResults.photoData },
+                { name: 'Performance', result: testResults.performance },
+                { name: 'Integration', result: testResults.integration }
+            ];
+            
+            const passedTests = tests.filter(t => t.result === true).length;
+            const failedTests = tests.filter(t => t.result === false).length;
+            const notRunTests = tests.filter(t => t.result === null).length;
+            
+            const summary = tests.map(test => {
+                const status = test.result === true ? '✅ PASS' : 
+                             test.result === false ? '❌ FAIL' : 
+                             '⏳ NOT RUN';
+                return `${status} - ${test.name}`;
+            }).join('\n');
+            
+            const overallStatus = failedTests === 0 && notRunTests === 0 ? 'ALL TESTS PASSED' :
+                                failedTests > 0 ? 'SOME TESTS FAILED' :
+                                'TESTS INCOMPLETE';
+            
+            const statusType = failedTests === 0 && notRunTests === 0 ? 'success' :
+                             failedTests > 0 ? 'error' : 'info';
+            
+            logResult('testSummary', 
+                `📊 TEST SUMMARY\n\n` +
+                `${summary}\n\n` +
+                `Results: ${passedTests} passed, ${failedTests} failed, ${notRunTests} not run\n\n` +
+                `Overall Status: ${overallStatus}`, 
+                statusType
+            );
+            
+            // Update overall status
+            if (failedTests === 0 && notRunTests === 0) {
+                updateOverallStatus('✅ All tests passed - Ready for production!', 'success');
+            } else if (failedTests > 0) {
+                updateOverallStatus(`❌ ${failedTests} test(s) failed - Issues need fixing`, 'error');
+            } else {
+                updateOverallStatus('⏳ Tests in progress...', 'warning');
+            }
+        }
+
+        async function runAllTests() {
+            updateOverallStatus('🚀 Running comprehensive test suite...', 'warning');
+            
+            // Reset results
+            Object.keys(testResults).forEach(key => testResults[key] = null);
+            
+            // Run all tests sequentially
+            await testConnectivity();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testCORS();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testResponseFormat();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testPhotoData();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testPerformance();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testIntegration();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Generate final summary
+            generateTestSummary();
+        }
+
+        // Auto-run tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('Auto-running comprehensive test suite...');
+                runAllTests();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

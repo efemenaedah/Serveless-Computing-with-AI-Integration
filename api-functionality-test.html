@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Functionality Test - Family Photo Gallery</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .info { border-left: 4px solid #17a2b8; }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1>🧪 API Functionality Test</h1>
+            <p>Testing your AWS API Gateway endpoint: <strong>https://h0vcodxzhj.execute-api.us-east-2.amazonaws.com</strong></p>
+        </div>
+
+        <!-- Real-time API Test -->
+        <div class="test-section">
+            <h2>🚀 Live API Test</h2>
+            <p>Test your actual API endpoint and see the real response</p>
+            <button class="btn" onclick="testLiveAPI()">Test Live API Now</button>
+            <div id="liveApiResult" class="result"></div>
+        </div>
+
+        <!-- Response Format Validation -->
+        <div class="test-section">
+            <h2>✅ Response Format Validation</h2>
+            <p>Check if the API response matches what your frontend expects</p>
+            <button class="btn" onclick="validateResponseFormat()">Validate Response Format</button>
+            <div id="formatValidationResult" class="result"></div>
+        </div>
+
+        <!-- CORS Test -->
+        <div class="test-section">
+            <h2>🔒 CORS Configuration Test</h2>
+            <p>Verify that CORS is properly configured for browser requests</p>
+            <button class="btn" onclick="testCORS()">Test CORS Headers</button>
+            <div id="corsTestResult" class="result"></div>
+        </div>
+
+        <!-- Performance Test -->
+        <div class="test-section">
+            <h2>⚡ Performance Test</h2>
+            <p>Measure API response times and performance</p>
+            <button class="btn" onclick="testPerformance()">Test Performance</button>
+            <div id="performanceResult" class="result"></div>
+        </div>
+
+        <!-- Integration Test -->
+        <div class="test-section">
+            <h2>🔗 Full Integration Test</h2>
+            <p>Simulate exactly what your Family Photo Gallery does</p>
+            <button class="btn" onclick="testFullIntegration()">Run Integration Test</button>
+            <div id="integrationResult" class="result"></div>
+        </div>
+
+        <!-- Overall Status -->
+        <div class="test-section" style="text-align: center; border-left: 4px solid #ffc107;">
+            <h2>📊 Overall API Status</h2>
+            <div id="overallStatus" style="font-size: 1.2rem; margin: 20px 0;">
+                <span class="status-indicator status-warning"></span>
+                Ready to test - Click buttons above
+            </div>
+            <button class="btn" onclick="runAllTests()" style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); font-size: 1.1rem; padding: 15px 30px;">
+                🚀 Run All Tests
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://h0vcodxzhj.execute-api.us-east-2.amazonaws.com/photos';
+        
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('overallStatus');
+            const indicator = type === 'success' ? 'status-success' : 
+                            type === 'error' ? 'status-error' : 'status-warning';
+            statusEl.innerHTML = `<span class="status-indicator ${indicator}"></span>${message}`;
+        }
+
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            
+            element.className = `result ${typeClass}`;
+            element.textContent = `[${timestamp}] ${message}`;
+        }
+
+        async function testLiveAPI() {
+            logResult('liveApiResult', 'Testing live API endpoint...', 'info');
+            updateStatus('Testing API...', 'warning');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const photoCount = data.photos ? data.photos.length : 0;
+                    
+                    logResult('liveApiResult', 
+                        `✅ API SUCCESS!\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Response Time: ${responseTime}ms\n` +
+                        `Photos Found: ${photoCount}\n` +
+                        `Content-Type: ${response.headers.get('content-type')}\n\n` +
+                        `Full Response:\n${JSON.stringify(data, null, 2)}`, 
+                        'success'
+                    );
+                    
+                    if (photoCount > 0) {
+                        updateStatus(`✅ API Working - ${photoCount} photos found`, 'success');
+                    } else {
+                        updateStatus('⚠️ API Working - No photos found', 'warning');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    logResult('liveApiResult', 
+                        `❌ API ERROR!\n` +
+                        `Status: ${response.status} ${response.statusText}\n` +
+                        `Response Time: ${responseTime}ms\n` +
+                        `Error Response: ${errorText}`, 
+                        'error'
+                    );
+                    updateStatus(`❌ API Error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                logResult('liveApiResult', 
+                    `❌ NETWORK ERROR!\n` +
+                    `Error: ${error.message}\n` +
+                    `This could indicate:\n` +
+                    `- Network connectivity issues\n` +
+                    `- CORS configuration problems\n` +
+                    `- API Gateway not deployed`, 
+                    'error'
+                );
+                updateStatus('❌ Network Error', 'error');
+            }
+        }
+
+        async function validateResponseFormat() {
+            logResult('formatValidationResult', 'Validating response format...', 'info');
+            
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    logResult('formatValidationResult', `Cannot validate - API returned ${response.status}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                const validationResults = [];
+                
+                // Check required structure
+                if (data.hasOwnProperty('photos') && Array.isArray(data.photos)) {
+                    validationResults.push('✅ Response has "photos" array (CORRECT FORMAT)');
+                    
+                    if (data.photos.length > 0) {
+                        const photo = data.photos[0];
+                        
+                        // Check required fields for each photo
+                        const requiredFields = ['url', 'key', 'lastModified', 'size'];
+                        requiredFields.forEach(field => {
+                            if (photo.hasOwnProperty(field)) {
+                                validationResults.push(`✅ Photo has "${field}" field`);
+                            } else {
+                                validationResults.push(`❌ Photo missing "${field}" field`);
+                            }
+                        });
+                        
+                        // Check field types
+                        if (typeof photo.url === 'string') validationResults.push('✅ URL is string');
+                        if (typeof photo.key === 'string') validationResults.push('✅ Key is string');
+                        if (typeof photo.size === 'number') validationResults.push('✅ Size is number');
+                        
+                        // Check metadata
+                        if (photo.metadata && typeof photo.metadata === 'object') {
+                            validationResults.push('✅ Metadata object present');
+                        } else {
+                            validationResults.push('⚠️ No metadata object (optional but recommended)');
+                        }
+                    } else {
+                        validationResults.push('⚠️ Photos array is empty - no photos to validate structure');
+                    }
+                } else {
+                    validationResults.push('❌ Response missing "photos" array - WRONG FORMAT!');
+                    validationResults.push('Expected: {"photos": [...]}');
+                    validationResults.push(`Got: ${JSON.stringify(data)}`);
+                }
+                
+                const hasErrors = validationResults.some(r => r.includes('❌'));
+                logResult('formatValidationResult', 
+                    `Response Format Validation:\n${validationResults.join('\n')}\n\n` +
+                    `${hasErrors ? '❌ FORMAT ISSUES FOUND' : '✅ FORMAT IS CORRECT'}`, 
+                    hasErrors ? 'error' : 'success'
+                );
+                
+            } catch (error) {
+                logResult('formatValidationResult', `❌ Validation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCORS() {
+            logResult('corsTestResult', 'Testing CORS configuration...', 'info');
+            
+            try {
+                // Test preflight request
+                const response = await fetch(API_URL, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                const corsWorking = corsHeaders['Access-Control-Allow-Origin'] === '*' || 
+                                  corsHeaders['Access-Control-Allow-Origin'] === window.location.origin;
+                
+                logResult('corsTestResult', 
+                    `CORS Configuration Test:\n` +
+                    `Status: ${response.status}\n` +
+                    `CORS Headers:\n${JSON.stringify(corsHeaders, null, 2)}\n\n` +
+                    `${corsWorking ? '✅ CORS is properly configured' : '❌ CORS needs configuration'}`, 
+                    corsWorking ? 'success' : 'error'
+                );
+            } catch (error) {
+                logResult('corsTestResult', 
+                    `❌ CORS Test Failed: ${error.message}\n` +
+                    `This usually means CORS is not enabled in API Gateway.`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testPerformance() {
+            logResult('performanceResult', 'Running performance test...', 'info');
+            
+            const iterations = 3;
+            const times = [];
+            
+            for (let i = 0; i < iterations; i++) {
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(API_URL);
+                    const endTime = Date.now();
+                    
+                    if (response.ok) {
+                        await response.json();
+                        times.push(endTime - startTime);
+                    }
+                } catch (error) {
+                    // Skip failed requests
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            if (times.length > 0) {
+                const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+                const minTime = Math.min(...times);
+                const maxTime = Math.max(...times);
+                
+                const performance = avgTime < 1000 ? 'Excellent' : 
+                                  avgTime < 2000 ? 'Good' : 
+                                  avgTime < 5000 ? 'Acceptable' : 'Slow';
+                
+                logResult('performanceResult', 
+                    `Performance Test Results:\n` +
+                    `Average Response Time: ${avgTime.toFixed(2)}ms\n` +
+                    `Minimum Time: ${minTime}ms\n` +
+                    `Maximum Time: ${maxTime}ms\n` +
+                    `Successful Requests: ${times.length}/${iterations}\n` +
+                    `Performance Rating: ${performance}`, 
+                    avgTime < 2000 ? 'success' : 'info'
+                );
+            } else {
+                logResult('performanceResult', '❌ All performance test requests failed', 'error');
+            }
+        }
+
+        async function testFullIntegration() {
+            logResult('integrationResult', 'Running full integration test...', 'info');
+            
+            try {
+                // Simulate exact Family Photo Gallery request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    mode: 'cors',
+                    credentials: 'omit',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Validate exactly like the frontend does
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response format: expected object');
+                }
+                
+                if (!Array.isArray(data.photos)) {
+                    throw new Error('Invalid response format: photos must be an array');
+                }
+                
+                // Validate each photo
+                data.photos.forEach((photo, index) => {
+                    if (!photo || typeof photo !== 'object') {
+                        throw new Error(`Invalid photo at index ${index}: expected object`);
+                    }
+                    
+                    if (!photo.url || typeof photo.url !== 'string') {
+                        throw new Error(`Invalid photo at index ${index}: url is required`);
+                    }
+                    
+                    if (!photo.key || typeof photo.key !== 'string') {
+                        throw new Error(`Invalid photo at index ${index}: key is required`);
+                    }
+                    
+                    if (!photo.lastModified || typeof photo.lastModified !== 'string') {
+                        throw new Error(`Invalid photo at index ${index}: lastModified is required`);
+                    }
+                    
+                    if (typeof photo.size !== 'number' || photo.size < 0) {
+                        throw new Error(`Invalid photo at index ${index}: size must be a non-negative number`);
+                    }
+                });
+                
+                logResult('integrationResult', 
+                    `🎉 INTEGRATION TEST PASSED!\n\n` +
+                    `✅ API Gateway responding correctly\n` +
+                    `✅ CORS configured properly\n` +
+                    `✅ Response format is valid\n` +
+                    `✅ Found ${data.photos.length} photos\n` +
+                    `✅ All photo objects have required fields\n\n` +
+                    `🚀 Your Family Photo Gallery will work perfectly!\n\n` +
+                    `${data.photos.length > 0 ? 
+                        `Sample photo:\n${JSON.stringify(data.photos[0], null, 2)}` : 
+                        'No photos found - check your S3 /uploads folder'}`, 
+                    'success'
+                );
+                
+                updateStatus(`✅ Ready for Production - ${data.photos.length} photos`, 'success');
+                
+            } catch (error) {
+                logResult('integrationResult', 
+                    `❌ INTEGRATION TEST FAILED!\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `Your Family Photo Gallery will have issues.\n` +
+                    `Please fix the above error before deployment.`, 
+                    'error'
+                );
+                updateStatus('❌ Issues Found', 'error');
+            }
+        }
+
+        async function runAllTests() {
+            updateStatus('Running comprehensive tests...', 'warning');
+            
+            await testLiveAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await validateResponseFormat();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testCORS();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testPerformance();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testFullIntegration();
+        }
+    </script>
+</body>
+</html>
